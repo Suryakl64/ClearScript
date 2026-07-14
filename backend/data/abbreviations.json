@@ -1,0 +1,362 @@
+{
+  "Hb": {
+    "full_name": "Hemoglobin",
+    "aliases": ["HGB", "Haemoglobin", "H.B.", "HB"],
+    "loinc": "718-7",
+    "category": "hematology"
+  },
+  "TLC": {
+    "full_name": "Total Leukocyte Count",
+    "aliases": ["WBC", "Total WBC", "Leucocyte Count", "Total Leucocyte Count", "TLC/WBC"],
+    "loinc": "6690-2",
+    "category": "hematology"
+  },
+  "DLC": {
+    "full_name": "Differential Leukocyte Count",
+    "aliases": ["DC", "Differential Count", "Diff Count"],
+    "loinc": "49024-7",
+    "category": "hematology"
+  },
+  "RBC": {
+    "full_name": "Red Blood Cell Count",
+    "aliases": ["Red Cell Count", "Erythrocyte Count"],
+    "loinc": "789-8",
+    "category": "hematology"
+  },
+  "PCV": {
+    "full_name": "Packed Cell Volume",
+    "aliases": ["HCT", "Hematocrit", "Haematocrit"],
+    "loinc": "4544-3",
+    "category": "hematology"
+  },
+  "MCV": {
+    "full_name": "Mean Corpuscular Volume",
+    "aliases": ["Mean Cell Volume"],
+    "loinc": "787-2",
+    "category": "hematology"
+  },
+  "MCH": {
+    "full_name": "Mean Corpuscular Hemoglobin",
+    "aliases": [],
+    "loinc": "785-6",
+    "category": "hematology"
+  },
+  "MCHC": {
+    "full_name": "Mean Corpuscular Hemoglobin Concentration",
+    "aliases": [],
+    "loinc": "786-4",
+    "category": "hematology"
+  },
+  "PLT": {
+    "full_name": "Platelet Count",
+    "aliases": ["Platelets", "PLT Count", "Thrombocyte Count"],
+    "loinc": "777-3",
+    "category": "hematology"
+  },
+  "ESR": {
+    "full_name": "Erythrocyte Sedimentation Rate",
+    "aliases": ["Sed Rate"],
+    "loinc": "4537-7",
+    "category": "hematology"
+  },
+  "SGPT": {
+    "full_name": "Alanine Aminotransferase",
+    "aliases": ["ALT", "GPT", "S.G.P.T.", "SGPT/ALT"],
+    "loinc": "1742-6",
+    "category": "liver"
+  },
+  "SGOT": {
+    "full_name": "Aspartate Aminotransferase",
+    "aliases": ["AST", "GOT", "S.G.O.T.", "SGOT/AST"],
+    "loinc": "1920-8",
+    "category": "liver"
+  },
+  "ALP": {
+    "full_name": "Alkaline Phosphatase",
+    "aliases": ["Alk Phos", "SAP"],
+    "loinc": "6768-6",
+    "category": "liver"
+  },
+  "Bilirubin Total": {
+    "full_name": "Total Bilirubin",
+    "aliases": ["T.Bil", "Total Bili", "Bilirubin (Total)", "Serum Bilirubin"],
+    "loinc": "1975-2",
+    "category": "liver"
+  },
+  "Bilirubin Direct": {
+    "full_name": "Direct Bilirubin",
+    "aliases": ["D.Bil", "Conjugated Bilirubin", "Direct Bili"],
+    "loinc": "1968-7",
+    "category": "liver"
+  },
+  "Bilirubin Indirect": {
+    "full_name": "Indirect Bilirubin",
+    "aliases": ["I.Bil", "Unconjugated Bilirubin"],
+    "loinc": "1971-1",
+    "category": "liver"
+  },
+  "Albumin": {
+    "full_name": "Serum Albumin",
+    "aliases": ["S. Albumin", "Alb"],
+    "loinc": "1751-7",
+    "category": "liver"
+  },
+  "Total Protein": {
+    "full_name": "Total Protein",
+    "aliases": ["S. Protein", "Serum Protein", "TP"],
+    "loinc": "2885-2",
+    "category": "liver"
+  },
+  "GGT": {
+    "full_name": "Gamma Glutamyl Transferase",
+    "aliases": ["Gamma GT", "GGTP"],
+    "loinc": "2324-2",
+    "category": "liver"
+  },
+  "TSH": {
+    "full_name": "Thyroid Stimulating Hormone",
+    "aliases": ["Thyroid Stimulating Hormone", "S. TSH"],
+    "loinc": "3016-3",
+    "category": "thyroid"
+  },
+  "T3": {
+    "full_name": "Triiodothyronine",
+    "aliases": ["Total T3", "TT3", "S. T3"],
+    "loinc": "3053-6",
+    "category": "thyroid"
+  },
+  "T4": {
+    "full_name": "Thyroxine",
+    "aliases": ["Total T4", "TT4", "S. T4"],
+    "loinc": "3026-2",
+    "category": "thyroid"
+  },
+  "FT3": {
+    "full_name": "Free T3",
+    "aliases": ["Free Triiodothyronine", "F T3"],
+    "loinc": "83112-3",
+    "category": "thyroid"
+  },
+  "FT4": {
+    "full_name": "Free T4",
+    "aliases": ["Free Thyroxine", "F T4"],
+    "loinc": "83113-1",
+    "category": "thyroid"
+  },
+  "FBS": {
+    "full_name": "Fasting Blood Sugar",
+    "aliases": ["FBG", "Fasting Glucose", "Fasting Blood Glucose", "FPG", "Glucose Fasting"],
+    "loinc": "1558-6",
+    "category": "diabetes"
+  },
+  "PPBS": {
+    "full_name": "Post Prandial Blood Sugar",
+    "aliases": ["PPBG", "Post Meal Glucose", "2hr PPBS"],
+    "loinc": "1521-4",
+    "category": "diabetes"
+  },
+  "RBS": {
+    "full_name": "Random Blood Sugar",
+    "aliases": ["Random Glucose", "RBG"],
+    "loinc": "2345-7",
+    "category": "diabetes"
+  },
+  "HbA1c": {
+    "full_name": "Glycated Hemoglobin",
+    "aliases": ["HBA1C", "A1C", "Glycosylated Hemoglobin", "Glycated Haemoglobin"],
+    "loinc": "4548-4",
+    "category": "diabetes"
+  },
+  "Urea": {
+    "full_name": "Blood Urea",
+    "aliases": ["BUN", "Blood Urea Nitrogen", "S. Urea", "Serum Urea"],
+    "loinc": "3094-0",
+    "category": "kidney"
+  },
+  "Creatinine": {
+    "full_name": "Serum Creatinine",
+    "aliases": ["S. Creatinine", "Creat", "Serum Creat"],
+    "loinc": "2160-0",
+    "category": "kidney"
+  },
+  "Uric Acid": {
+    "full_name": "Uric Acid",
+    "aliases": ["S. Uric Acid", "Serum Uric Acid"],
+    "loinc": "3084-1",
+    "category": "kidney"
+  },
+  "eGFR": {
+    "full_name": "Estimated Glomerular Filtration Rate",
+    "aliases": ["EGFR", "GFR"],
+    "loinc": "98979-8",
+    "category": "kidney"
+  },
+  "Sodium": {
+    "full_name": "Serum Sodium",
+    "aliases": ["Na", "S. Na", "Na+"],
+    "loinc": "2951-2",
+    "category": "electrolytes"
+  },
+  "Potassium": {
+    "full_name": "Serum Potassium",
+    "aliases": ["K", "S. K", "K+"],
+    "loinc": "2823-3",
+    "category": "electrolytes"
+  },
+  "Chloride": {
+    "full_name": "Serum Chloride",
+    "aliases": ["Cl", "S. Cl", "Cl-"],
+    "loinc": "2075-0",
+    "category": "electrolytes"
+  },
+  "Calcium": {
+    "full_name": "Serum Calcium",
+    "aliases": ["S. Calcium", "Ca", "Serum Ca"],
+    "loinc": "17861-6",
+    "category": "electrolytes"
+  },
+  "Phosphorus": {
+    "full_name": "Serum Phosphorus",
+    "aliases": ["Phosphate", "S. Phosphorus", "Inorganic Phosphorus"],
+    "loinc": "2777-1",
+    "category": "electrolytes"
+  },
+  "Magnesium": {
+    "full_name": "Serum Magnesium",
+    "aliases": ["Mg", "S. Magnesium"],
+    "loinc": "19123-9",
+    "category": "electrolytes"
+  },
+  "Total Cholesterol": {
+    "full_name": "Total Cholesterol",
+    "aliases": ["Cholesterol", "S. Cholesterol", "TC"],
+    "loinc": "2093-3",
+    "category": "lipid"
+  },
+  "HDL": {
+    "full_name": "High Density Lipoprotein",
+    "aliases": ["HDL Cholesterol", "HDL-C"],
+    "loinc": "2085-9",
+    "category": "lipid"
+  },
+  "LDL": {
+    "full_name": "Low Density Lipoprotein",
+    "aliases": ["LDL Cholesterol", "LDL-C", "LDL Chol"],
+    "loinc": "13457-7",
+    "category": "lipid"
+  },
+  "VLDL": {
+    "full_name": "Very Low Density Lipoprotein",
+    "aliases": ["VLDL Cholesterol"],
+    "loinc": "13458-5",
+    "category": "lipid"
+  },
+  "Triglycerides": {
+    "full_name": "Triglycerides",
+    "aliases": ["TG", "S. Triglycerides", "Trigs"],
+    "loinc": "2571-8",
+    "category": "lipid"
+  },
+  "CRP": {
+    "full_name": "C-Reactive Protein",
+    "aliases": ["C Reactive Protein", "hs-CRP"],
+    "loinc": "1988-5",
+    "category": "inflammatory"
+  },
+  "Vitamin D": {
+    "full_name": "25-Hydroxy Vitamin D",
+    "aliases": ["Vit D", "25(OH)D", "Vitamin D3", "25 OH Vitamin D"],
+    "loinc": "62292-8",
+    "category": "vitamins"
+  },
+  "Vitamin B12": {
+    "full_name": "Vitamin B12",
+    "aliases": ["Vit B12", "Cobalamin", "B12"],
+    "loinc": "2132-9",
+    "category": "vitamins"
+  },
+  "Ferritin": {
+    "full_name": "Serum Ferritin",
+    "aliases": ["S. Ferritin"],
+    "loinc": "2276-4",
+    "category": "hematology"
+  },
+  "Iron": {
+    "full_name": "Serum Iron",
+    "aliases": ["S. Iron", "Serum Fe"],
+    "loinc": "2498-4",
+    "category": "hematology"
+  },
+  "TIBC": {
+    "full_name": "Total Iron Binding Capacity",
+    "aliases": ["Iron Binding Capacity"],
+    "loinc": "2500-7",
+    "category": "hematology"
+  },
+  "PT": {
+    "full_name": "Prothrombin Time",
+    "aliases": ["Protime"],
+    "loinc": "5902-2",
+    "category": "coagulation"
+  },
+  "INR": {
+    "full_name": "International Normalized Ratio",
+    "aliases": [],
+    "loinc": "6301-6",
+    "category": "coagulation"
+  },
+  "APTT": {
+    "full_name": "Activated Partial Thromboplastin Time",
+    "aliases": ["PTT", "aPTT"],
+    "loinc": "3173-2",
+    "category": "coagulation"
+  },
+  "Neutrophils": {
+    "full_name": "Neutrophils",
+    "aliases": ["Neut", "Polymorphs", "PMN"],
+    "loinc": "770-8",
+    "category": "hematology"
+  },
+  "Lymphocytes": {
+    "full_name": "Lymphocytes",
+    "aliases": ["Lymph", "Lymphs"],
+    "loinc": "736-9",
+    "category": "hematology"
+  },
+  "Monocytes": {
+    "full_name": "Monocytes",
+    "aliases": ["Mono"],
+    "loinc": "742-7",
+    "category": "hematology"
+  },
+  "Eosinophils": {
+    "full_name": "Eosinophils",
+    "aliases": ["Eosin", "Eos"],
+    "loinc": "713-8",
+    "category": "hematology"
+  },
+  "Basophils": {
+    "full_name": "Basophils",
+    "aliases": ["Baso"],
+    "loinc": "706-2",
+    "category": "hematology"
+  },
+  "PSA": {
+    "full_name": "Prostate Specific Antigen",
+    "aliases": ["Prostate Specific Antigen"],
+    "loinc": "2857-1",
+    "category": "tumor_marker"
+  },
+  "CEA": {
+    "full_name": "Carcinoembryonic Antigen",
+    "aliases": [],
+    "loinc": "2039-6",
+    "category": "tumor_marker"
+  },
+  "AFP": {
+    "full_name": "Alpha Fetoprotein",
+    "aliases": ["Alpha-Fetoprotein"],
+    "loinc": "1834-1",
+    "category": "tumor_marker"
+  }
+}
