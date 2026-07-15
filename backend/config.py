@@ -1,5 +1,11 @@
 """ClearScript configuration — all paths and model names in one place."""
+import os
 from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Load .env file if present
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 BACKEND_DIR = BASE_DIR / "backend"
@@ -15,6 +21,11 @@ EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 # Ollama (local — no API keys)
 OLLAMA_BASE_URL = "http://localhost:11434"
 OLLAMA_MODEL = "mistral"
+OLLAMA_VISION_MODEL = "llava"  # local multimodal model for image understanding
+
+# Google Gemini (free tier — optional)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = "gemini-2.0-flash"
 
 # Supported translation languages (IndicTrans2 BCP-47 tags)
 SUPPORTED_LANGUAGES = {

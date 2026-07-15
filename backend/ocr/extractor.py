@@ -3,6 +3,8 @@ import cv2
 import numpy as np
 import re
 
+from backend.ocr.layout_segmenter import detect_layout, reassemble_column_texts
+
 # ── Engine singleton ──────────────────────────────────────────────────────────
 _ocr_engine = None
 
@@ -17,51 +19,80 @@ def get_ocr_engine():
     return _ocr_engine
 
 
-# ── Core OCR call ─────────────────────────────────────────────────────────────
-def extract_from_image_array(img_array: np.ndarray) -> str:
+# ── Core OCR call (original — single column) ─────────────────────────────────
+def _ocr_image_raw(img_rgb: np.ndarray) -> list[tuple]:
     """
-    Run EasyOCR on a numpy BGR image array.
-    Returns all detected text as a single string, ordered top-to-bottom.
+    Run EasyOCR on an RGB image array.
+    Returns the raw EasyOCR results: [(bounding_box, text, confidence), ...]
     """
-    # EasyOCR expects RGB, OpenCV gives BGR — convert
-    if len(img_array.shape) == 2:
-        # Grayscale → RGB
-        img_rgb = cv2.cvtColor(img_array, cv2.COLOR_GRAY2RGB)
-    elif img_array.shape[2] == 4:
-        # RGBA → RGB
-        img_rgb = cv2.cvtColor(img_array, cv2.COLOR_BGRA2RGB)
-    else:
-        # BGR → RGB
-        img_rgb = cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB)
-
     reader = get_ocr_engine()
+    return reader.readtext(img_rgb, detail=1, paragraph=False)
 
-    # EasyOCR returns: [ (box, text, confidence), ... ]
-    # box is [[x1,y1],[x2,y2],[x3,y3],[x4,y4]]
-    raw = reader.readtext(img_rgb, detail=1, paragraph=False)
 
+def _to_rgb(img_array: np.ndarray) -> np.ndarray:
+    """Convert any OpenCV image format to RGB for EasyOCR."""
+    if len(img_array.shape) == 2:
+        return cv2.cvtColor(img_array, cv2.COLOR_GRAY2RGB)
+    elif img_array.shape[2] == 4:
+        return cv2.cvtColor(img_array, cv2.COLOR_BGRA2RGB)
+    else:
+        return cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB)
+
+
+def _raw_to_text(raw: list[tuple]) -> str:
+    """Convert raw EasyOCR results to a plain text string (top-to-bottom)."""
     if not raw:
         return ""
 
-    # Sort top-to-bottom by y-coordinate of top-left corner of bounding box
     raw_sorted = sorted(raw, key=lambda x: x[0][0][1])
-
     out = []
     prev_y = None
     for (box, text, confidence) in raw_sorted:
-        if confidence < 0.4:        # skip very uncertain reads
+        if confidence < 0.4:
             continue
-
-        y = box[0][1]               # top-left y coordinate
-
-        # Large vertical gap between lines = table row separator
+        y = box[0][1]
         if prev_y is not None and (y - prev_y) > 40:
             out.append("")
-
         out.append(text.strip())
         prev_y = y
 
     return "\n".join(out)
+
+
+# ── Layout-aware OCR ──────────────────────────────────────────────────────────
+def extract_from_image_array(img_array: np.ndarray) -> str:
+    """
+    Run EasyOCR on a numpy BGR image array with layout-aware pre-processing.
+
+    If the image contains a multi-column layout (e.g., side-by-side tables),
+    the columns are detected via OpenCV, OCR'd separately, and the results
+    are reassembled row-by-row to preserve the tabular structure.
+
+    Falls back to standard single-pass OCR for single-column documents.
+    """
+    # Step 1: Detect layout (columns)
+    layout = detect_layout(img_array)
+
+    if layout.is_multi_column and layout.column_count >= 2:
+        print(f"  Layout: {layout.column_count} columns detected "
+              f"(dividers at x={layout.divider_x_positions})")
+
+        # Step 2: OCR each column separately
+        column_results = []
+        for i, col_img in enumerate(layout.columns):
+            col_rgb = _to_rgb(col_img)
+            raw = _ocr_image_raw(col_rgb)
+            column_results.append(raw)
+            print(f"    Column {i+1}: {len(raw)} text blocks detected")
+
+        # Step 3: Reassemble columns row-by-row
+        text = reassemble_column_texts(column_results)
+        return text
+    else:
+        # Single column — original behaviour
+        img_rgb = _to_rgb(img_array)
+        raw = _ocr_image_raw(img_rgb)
+        return _raw_to_text(raw)
 
 
 # ── File-type handlers ────────────────────────────────────────────────────────
