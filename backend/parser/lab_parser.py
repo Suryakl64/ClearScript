@@ -130,6 +130,14 @@ def _build_finding(
     }
 
 
+_METADATA_IGNORE_PATTERNS = re.compile(
+    r"\b(page\s*\d|generated|printed|report\s*date|print\s*date|sample\s*date|"
+    r"collected|registered|approved|verified|barcode|mrn|ipd|opd|patient\s*id|"
+    r"bill\s*no|invoice|hospital|clinic|doctor|dr\.|ph:\s*\d|tel:\s*\d)\b",
+    re.IGNORECASE,
+)
+
+
 def parse_structured_lab(text: str, gender: str = "default") -> list[dict]:
     """Extract lab findings from structured report text."""
     findings: list[dict] = []
@@ -138,7 +146,7 @@ def parse_structured_lab(text: str, gender: str = "default") -> list[dict]:
     lines = text.split("\n")
     for line in lines:
         line = line.strip()
-        if len(line) < 5 or line.startswith("---"):
+        if len(line) < 5 or line.startswith("---") or _METADATA_IGNORE_PATTERNS.search(line):
             continue
 
         for pattern in LAB_ROW_PATTERNS:
@@ -148,6 +156,9 @@ def parse_structured_lab(text: str, gender: str = "default") -> list[dict]:
 
             groups = match.groups()
             raw_name = groups[0]
+            if _METADATA_IGNORE_PATTERNS.search(raw_name) or re.search(r"\b\d{1,2}[-/\s][A-Za-z]{3,9}[-/\s]\d{2,4}\b", raw_name):
+                continue
+
             value_str = groups[1]
             unit = groups[2] if len(groups) > 2 else None
             ref_str = None

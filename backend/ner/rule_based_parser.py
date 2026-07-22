@@ -157,27 +157,32 @@ def _extract_explicit_flag(flag_str: Optional[str], value_str: str) -> Optional[
 
 
 # ---------------------------------------------------------------------------
+# Metadata Filters
+# ---------------------------------------------------------------------------
+
+_METADATA_IGNORE_PATTERNS = re.compile(
+    r"\b(page\s*\d|generated|printed|report\s*date|print\s*date|sample\s*date|"
+    r"collected|registered|approved|verified|barcode|mrn|ipd|opd|patient\s*id|"
+    r"bill\s*no|invoice|hospital|clinic|doctor|dr\.|ph:\s*\d|tel:\s*\d)\b",
+    re.IGNORECASE,
+)
+
+def _is_metadata_line(line: str, raw_name: str) -> bool:
+    """Check if line or raw_name is document metadata (headers/footers/timestamps)."""
+    if _METADATA_IGNORE_PATTERNS.search(line) or _METADATA_IGNORE_PATTERNS.search(raw_name):
+        return True
+    if re.search(r"\b\d{1,2}[-/\s][A-Za-z]{3,9}[-/\s]\d{2,4}\b", raw_name):
+        return True
+    return False
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
 def parse_structured_report(text: str) -> list[dict]:
     """
     Parse structured / tabular lab report text and extract findings.
-
-    Each finding is a dict:
-        test       – canonical test name
-        value      – numeric value (float or None)
-        unit       – unit string
-        range_low  – lower bound of reference range (float or None)
-        range_high – upper bound of reference range (float or None)
-        flag       – HIGH / LOW / NORMAL / UNKNOWN
-        status     – same as flag, kept for schema compatibility
-        full_name  – descriptive test name
-        loinc      – LOINC code or None
-        category   – clinical category
-        source     – "rule_parser"
-        raw_name   – original text from the report
-        raw_line   – original line from the report
     """
     findings: list[dict] = []
     seen: set[str] = set()
@@ -187,6 +192,9 @@ def parse_structured_report(text: str) -> list[dict]:
         if len(line) < 5 or line.startswith("---"):
             continue
 
+        if _METADATA_IGNORE_PATTERNS.search(line):
+            continue
+
         for pattern in LAB_ROW_PATTERNS:
             match = pattern.match(line)
             if not match:
@@ -194,6 +202,9 @@ def parse_structured_report(text: str) -> list[dict]:
 
             groups = match.groups()
             raw_name = groups[0]
+            if _is_metadata_line(line, raw_name):
+                continue
+
             value_str = groups[1]
             unit = groups[2] if len(groups) > 2 else None
             ref_str: Optional[str] = None
