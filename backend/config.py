@@ -27,6 +27,10 @@ OLLAMA_VISION_MODEL = "llava"  # local multimodal model for image understanding
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = "gemini-2.0-flash"
 
+# Groq Cloud — Llama 3.2 Vision (free tier — recommended)
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_VISION_MODEL = "llama-3.2-90b-vision-preview"
+
 # Supported translation languages (IndicTrans2 BCP-47 tags)
 SUPPORTED_LANGUAGES = {
     "en": {"label": "English", "indic_tag": None},

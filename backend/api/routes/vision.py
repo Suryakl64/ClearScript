@@ -2,13 +2,13 @@
 Vision extraction API route.
 
 POST /vision/extract — accepts an image or PDF and extracts structured
-medical findings using vision AI models (Gemini, Ollama llava, or
-fallback to standard OCR + NER pipeline).
+medical findings using vision AI models.
 
 Extraction priority:
-    1. Gemini Vision (if GEMINI_API_KEY is configured)
-    2. Ollama Vision / llava (if Ollama is running with llava model)
-    3. Layout-aware OCR + NER pipeline (always available)
+    1. Groq / Llama 3.2 Vision (if GROQ_API_KEY is configured)
+    2. Gemini Vision (if GEMINI_API_KEY is configured)
+    3. Ollama Vision / llava (if Ollama is running with llava model)
+    4. Layout-aware OCR + NER pipeline (always available)
 """
 
 import logging
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/vision", tags=["Vision"])
 
-# MIME type mapping for Gemini
+# MIME type mapping
 _MIME_MAP = {
     "application/pdf": "application/pdf",
     "image/png": "image/png",
@@ -46,14 +46,14 @@ async def extract_with_vision(
     **Optional params:**
 
     - ``prefer`` — force a specific extraction backend:
-        ``"gemini"``, ``"ollama"``, or ``"ocr"`` (standard pipeline).
+        ``"groq"``, ``"gemini"``, ``"ollama"``, or ``"ocr"`` (standard pipeline).
         If not set, the endpoint tries them in priority order.
 
     **Returns** a JSON body with::
 
         {
             "success": true,
-            "extractor": "gemini_vision" | "ollama_vision" | "ocr_ner_pipeline",
+            "extractor": "groq_llama_vision" | "gemini_vision" | "ollama_vision" | "ocr_ner_pipeline",
             "patient": {...} | null,
             "findings": [...],
             "finding_count": int,
@@ -80,14 +80,17 @@ async def extract_with_vision(
     mime_type = _MIME_MAP.get(file.content_type, "image/jpeg")
 
     # Determine extraction order based on 'prefer' parameter
-    if prefer == "gemini":
+    if prefer == "groq":
+        extractors = [_try_groq]
+    elif prefer == "gemini":
         extractors = [_try_gemini]
     elif prefer == "ollama":
         extractors = [_try_ollama_vision]
     elif prefer == "ocr":
         extractors = [_try_ocr_pipeline]
     else:
-        extractors = [_try_gemini, _try_ollama_vision, _try_ocr_pipeline]
+        # Default priority: Groq → Gemini → Ollama → OCR
+        extractors = [_try_groq, _try_gemini, _try_ollama_vision, _try_ocr_pipeline]
 
     # Try extractors in order
     last_error = None
@@ -105,13 +108,41 @@ async def extract_with_vision(
     raise HTTPException(
         status_code=503,
         detail=f"All extraction methods failed. Last error: {last_error}. "
-               f"Ensure Ollama is running or set GEMINI_API_KEY.",
+               f"Set GROQ_API_KEY in .env (free from console.groq.com/keys).",
     )
 
 
 # ---------------------------------------------------------------------------
 # Extractor backends
 # ---------------------------------------------------------------------------
+
+def _try_groq(image_bytes: bytes, filename: str, mime_type: str) -> Optional[dict]:
+    """Try Groq / Llama 3.2 Vision extraction (recommended)."""
+    from backend.config import GROQ_API_KEY
+    if not GROQ_API_KEY:
+        logger.info("Groq skipped — no API key configured")
+        return None
+
+    from backend.llm.groq_client import (
+        GroqError,
+        extract_findings_from_image,
+        normalize_groq_findings,
+    )
+
+    try:
+        raw_result = extract_findings_from_image(image_bytes, mime_type=mime_type)
+        findings = normalize_groq_findings(raw_result)
+        return {
+            "extractor": "groq_llama_vision",
+            "patient": raw_result.get("patient"),
+            "findings": findings,
+            "finding_count": len(findings),
+            "overall_status": raw_result.get("overall_status"),
+        }
+    except GroqError as exc:
+        logger.warning("Groq extraction failed: %s", exc)
+        raise
+
 
 def _try_gemini(image_bytes: bytes, filename: str, mime_type: str) -> Optional[dict]:
     """Try Gemini Vision extraction."""
@@ -159,7 +190,6 @@ def _try_ollama_vision(image_bytes: bytes, filename: str, mime_type: str) -> Opt
 
     try:
         raw_result = extract_findings_from_image(image_bytes)
-        # Reuse the same normalizer — Ollama returns the same JSON schema
         findings = normalize_gemini_findings(raw_result)
         return {
             "extractor": "ollama_vision",
@@ -200,10 +230,12 @@ def _try_ocr_pipeline(image_bytes: bytes, filename: str, mime_type: str) -> Opti
 @router.get("/status")
 def vision_status():
     """Check availability of all vision extraction backends."""
+    from backend.llm.groq_client import check_groq_available
     from backend.llm.gemini_client import check_gemini_available
     from backend.llm.ollama_client import check_ollama_available
 
     return {
+        "groq": check_groq_available(),
         "gemini": check_gemini_available(),
         "ollama": check_ollama_available(),
         "ocr_pipeline": {"available": True, "note": "Always available as fallback"},
