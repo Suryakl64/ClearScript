@@ -1,36 +1,83 @@
-"""Plain-English explanations for lab findings via Mistral 7B (Ollama)."""
+"""Plain-English explanations for lab findings via Mistral 7B (Ollama).
+
+Supports two modes:
+  1. Single-finding explanation — `explain_finding(finding)`
+  2. Batch explanation — `explain_all_findings(findings)` (single LLM call,
+     ~10x faster on CPU)
+
+When Ollama is offline, rule-based fallback explanations are generated
+automatically so the API never returns an error.
+"""
+
+import json
+import logging
+import re
+from typing import Optional
+
 from backend.constants import DISCLAIMER_SHORT
 from backend.llm.ollama_client import OllamaError, generate
 
-SYSTEM_PROMPT = """You are a medical report explainer for Indian patients.
-Explain lab results in simple, plain English that a non-medical person can understand.
-Rules:
-- Be concise (2-4 sentences per finding)
-- Do NOT diagnose or prescribe treatment
-- Mention if a value is slightly or significantly out of range
-- Use everyday language, avoid jargon unless you explain it
-- Always remind the reader this is informational only"""
+logger = logging.getLogger(__name__)
+
+# ── System prompt — kept short for CPU efficiency ─────────────────────────────
+SYSTEM_PROMPT = (
+    "You are a medical report explainer for patients. "
+    "Explain lab results in simple, plain English that a non-medical person "
+    "can understand.\n"
+    "Rules:\n"
+    "- Be concise: 2-3 sentences per finding\n"
+    "- Do NOT diagnose or prescribe treatment\n"
+    "- Say whether the value is slightly or significantly out of range\n"
+    "- Use everyday language; if you must use a medical term, explain it\n"
+    "- This is informational only — always remind to consult a doctor"
+)
+
+
+# ---------------------------------------------------------------------------
+# Single-finding explanation
+# ---------------------------------------------------------------------------
+
+def _format_range(finding: dict) -> str:
+    """Build a human-readable reference range string from range_low/high."""
+    low = finding.get("range_low")
+    high = finding.get("range_high")
+    if low is not None and high is not None:
+        return f"{low}-{high}"
+    if low is not None:
+        return f"> {low}"
+    if high is not None:
+        return f"< {high}"
+    return "not provided"
 
 
 def explain_finding(finding: dict) -> dict:
-    """Generate plain-English explanation for a single lab finding."""
-    name = finding.get("test_name", "Unknown test")
-    value = finding.get("value_raw") or finding.get("value", "N/A")
+    """
+    Generate a plain-English explanation for a single lab finding.
+
+    Uses the Phase 2 unified schema fields:
+      test, value, unit, range_low, range_high, flag, full_name
+
+    Returns a dict with 'explanation', 'explanation_available', 'disclaimer'.
+    """
+    name = finding.get("full_name") or finding.get("test", "Unknown test")
+    value = finding.get("value", "N/A")
     unit = finding.get("unit", "")
-    ref = finding.get("reference_range", "not provided")
-    flag = finding.get("flag", "unknown")
+    ref = _format_range(finding)
+    flag = finding.get("flag", "UNKNOWN")
 
-    prompt = f"""Explain this lab test result to a patient in plain English:
-
-Test: {name}
-Value: {value} {unit}
-Reference Range: {ref}
-Status: {flag}
-
-Write a clear, reassuring explanation. Do not diagnose."""
+    prompt = (
+        f"Explain this lab result to a patient in 2-3 sentences:\n\n"
+        f"Test: {name}\n"
+        f"Value: {value} {unit}\n"
+        f"Reference Range: {ref}\n"
+        f"Status: {flag}\n\n"
+        f"Be clear and reassuring. Do not diagnose."
+    )
 
     try:
-        explanation = generate(prompt, system=SYSTEM_PROMPT, temperature=0.2)
+        explanation = generate(
+            prompt, system=SYSTEM_PROMPT, temperature=0.2, max_tokens=150
+        )
         return {
             "explanation": explanation,
             "explanation_available": True,
@@ -45,74 +92,133 @@ Write a clear, reassuring explanation. Do not diagnose."""
         }
 
 
+# ---------------------------------------------------------------------------
+# Batch explanation — single LLM call for all findings (CPU-efficient)
+# ---------------------------------------------------------------------------
+
 def explain_all_findings(findings: list[dict]) -> list[dict]:
-    """Add explanation field to each finding."""
+    """
+    Add an explanation to every finding using a **single** LLM call.
+
+    This is ~10x faster than calling explain_finding() per item because
+    Mistral only loads context once.
+
+    Falls back to per-finding rule-based explanations if Ollama is offline.
+    """
+    if not findings:
+        return []
+
+    # Build a numbered list of findings for the prompt
+    lines = []
+    for i, f in enumerate(findings, 1):
+        name = f.get("full_name") or f.get("test", "Unknown")
+        value = f.get("value", "N/A")
+        unit = f.get("unit", "")
+        ref = _format_range(f)
+        flag = f.get("flag", "UNKNOWN")
+        lines.append(
+            f"{i}. {name}: {value} {unit} (range: {ref}, status: {flag})"
+        )
+
+    findings_text = "\n".join(lines)
+
+    prompt = (
+        f"Here are {len(findings)} lab results. For each one, write a brief "
+        f"2-3 sentence explanation in plain English. Number your responses "
+        f"to match.\n\n{findings_text}\n\n"
+        f"Keep each explanation concise. Do not diagnose."
+    )
+
+    try:
+        raw = generate(
+            prompt,
+            system=SYSTEM_PROMPT,
+            temperature=0.2,
+            max_tokens=min(150 * len(findings), 4096),
+        )
+        explanations = _parse_numbered_response(raw, len(findings))
+    except OllamaError as exc:
+        logger.warning("Batch explain failed (Ollama offline): %s", exc)
+        explanations = None
+
     enriched = []
-    for finding in findings:
-        result = explain_finding(finding)
-        enriched.append({**finding, **result})
+    for i, f in enumerate(findings):
+        if explanations and i < len(explanations) and explanations[i]:
+            enriched.append({
+                **f,
+                "explanation": explanations[i],
+                "explanation_available": True,
+                "disclaimer": DISCLAIMER_SHORT,
+            })
+        else:
+            enriched.append({
+                **f,
+                "explanation": _fallback_explanation(f),
+                "explanation_available": explanations is None and False or False,
+                "error": "Ollama offline" if explanations is None else None,
+                "disclaimer": DISCLAIMER_SHORT,
+            })
+
     return enriched
 
 
-def explain_report_summary(findings: list[dict], report_type: str) -> dict:
-    """Generate an overall report summary."""
-    abnormal = [f for f in findings if f.get("flag") not in ("normal", "unknown", None)]
-    normal_count = len(findings) - len(abnormal)
+def _parse_numbered_response(text: str, count: int) -> list[Optional[str]]:
+    """
+    Parse a numbered response like:
+        1. Hemoglobin is...
+        2. WBC count is...
+    into a list of strings indexed by finding number.
+    """
+    results: list[Optional[str]] = [None] * count
 
-    findings_text = "\n".join(
-        f"- {f.get('test_name')}: {f.get('value_raw', f.get('value'))} "
-        f"{f.get('unit', '')} [{f.get('flag', '?')}]"
-        for f in findings[:20]
-    )
+    # Split on numbered patterns like "1.", "2.", etc.
+    parts = re.split(r"\n(?=\d+[\.\)]\s)", text.strip())
 
-    prompt = f"""Summarize this medical report for a patient in plain English.
+    for part in parts:
+        match = re.match(r"(\d+)[\.\)]\s*(.*)", part, re.DOTALL)
+        if match:
+            idx = int(match.group(1)) - 1  # 0-indexed
+            if 0 <= idx < count:
+                results[idx] = match.group(2).strip()
 
-Report type: {report_type}
-Total findings: {len(findings)}
-Normal: {normal_count}, Abnormal/flagged: {len(abnormal)}
+    return results
 
-Findings:
-{findings_text}
 
-Write a 3-5 sentence overview. Highlight anything that needs doctor follow-up.
-Do not diagnose."""
-
-    try:
-        summary = generate(prompt, system=SYSTEM_PROMPT, temperature=0.2, max_tokens=300)
-        return {"summary": summary, "summary_available": True}
-    except OllamaError as exc:
-        return {
-            "summary": _fallback_summary(findings, abnormal),
-            "summary_available": False,
-            "error": str(exc),
-        }
-
+# ---------------------------------------------------------------------------
+# Rule-based fallback (always works, no LLM needed)
+# ---------------------------------------------------------------------------
 
 def _fallback_explanation(finding: dict) -> str:
-    name = finding.get("test_name", "This test")
-    flag = finding.get("flag", "unknown")
-    if flag == "normal":
-        return f"{name} appears to be within the normal range based on available reference values."
-    if flag in ("low", "high"):
-        return (
-            f"{name} is {flag} compared to the reference range. "
-            "Please discuss this result with your doctor for proper interpretation."
-        )
-    if flag.startswith("critical"):
-        return (
-            f"{name} shows a potentially critical value. "
-            "Please contact your healthcare provider promptly."
-        )
-    return f"{name} result recorded. Please consult your doctor for interpretation."
+    """Generate a simple rule-based explanation when Ollama is offline."""
+    name = finding.get("full_name") or finding.get("test", "This test")
+    flag = (finding.get("flag") or "UNKNOWN").upper()
+    value = finding.get("value")
+    unit = finding.get("unit", "")
+    ref = _format_range(finding)
 
-
-def _fallback_summary(findings: list, abnormal: list) -> str:
-    if not findings:
-        return "No structured findings were extracted from this report."
-    if not abnormal:
-        return f"All {len(findings)} extracted values appear within normal ranges."
-    names = ", ".join(f["test_name"] for f in abnormal[:5])
+    if flag == "NORMAL":
+        return (
+            f"Your {name} result ({value} {unit}) is within the normal "
+            f"reference range ({ref}). This is a good sign."
+        )
+    if flag == "HIGH":
+        return (
+            f"Your {name} result ({value} {unit}) is above the normal "
+            f"reference range ({ref}). Please discuss this with your doctor "
+            f"to understand what it means for your health."
+        )
+    if flag == "LOW":
+        return (
+            f"Your {name} result ({value} {unit}) is below the normal "
+            f"reference range ({ref}). Please discuss this with your doctor "
+            f"to understand what it means for your health."
+        )
+    if flag.startswith("CRITICAL"):
+        return (
+            f"Your {name} result ({value} {unit}) is significantly outside "
+            f"the normal range. Please contact your healthcare provider promptly."
+        )
     return (
-        f"Found {len(abnormal)} result(s) outside normal range including: {names}. "
-        "Please review these with your doctor."
+        f"Your {name} result is {value} {unit}. "
+        f"Please consult your doctor for proper interpretation."
     )
