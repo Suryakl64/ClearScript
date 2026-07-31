@@ -16,7 +16,7 @@ async def extract_findings(
     text: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
     skip_biobert: bool = Form(False),
-    force_parser: Optional[str] = Form(None),
+    force_parser: Optional[str] = Form(None, description="Force 'structured', 'narrative', or 'both'"),
 ):
     """
     Extract structured medical findings from raw text or an uploaded file.

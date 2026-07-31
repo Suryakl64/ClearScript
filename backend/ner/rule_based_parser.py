@@ -52,6 +52,12 @@ LAB_ROW_PATTERNS = [
         r"([\d.]+)\s*[-–—]\s*([\d.]+)\s*$",
         re.IGNORECASE | re.MULTILINE,
     ),
+    # ── Pattern 6: single-space or tab-delimited row ──────────────────────
+    # TestName Value Unit RefLow-RefHigh (Optional Flag)
+    re.compile(
+        r"^([A-Za-z0-9\s()/\-]{2,45}?)\s+([\d.<>]+)\s+([A-Za-z/%\s]{1,15}?)\s+([\d.]+\s*[-–—to]+\s*[\d.]+)\s*(H|L|HIGH|LOW|NORMAL)?\s*$",
+        re.IGNORECASE | re.MULTILINE,
+    ),
 ]
 
 

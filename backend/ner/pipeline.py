@@ -144,6 +144,9 @@ def run_ner_pipeline(
 
     # ── Step 1: Detect report type ────────────────────────────────────────
     detection = detect_report_type(text)
+    valid_parsers = ("structured", "narrative", "mixed", "both")
+    if force_parser and force_parser.lower() not in valid_parsers:
+        force_parser = None
     report_type = force_parser or detection.report_type
     parsers_used: list[str] = []
 
