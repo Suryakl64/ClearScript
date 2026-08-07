@@ -10,12 +10,14 @@ from backend.api.routes.ocr import router as ocr_router
 from backend.api.routes.ner import router as ner_router
 from backend.api.routes.vision import router as vision_router
 from backend.api.routes.llm import router as llm_router
+from backend.api.routes.translation import router as translation_router
+from backend.api.routes.chat import router as chat_router
 
 app = FastAPI(
     title="ClearScript API",
     description="AI-powered medical report translator — converts complex medical "
                 "documents into plain-language summaries patients can understand.",
-    version="0.3.0",
+    version="0.4.0",
 )
 
 # ── Register routers ──────────────────────────────────────────────────────────
@@ -23,6 +25,8 @@ app.include_router(ocr_router)
 app.include_router(ner_router)
 app.include_router(vision_router)
 app.include_router(llm_router)
+app.include_router(translation_router)
+app.include_router(chat_router)
 
 # CORS — allow the Vite dev server during development
 app.add_middleware(

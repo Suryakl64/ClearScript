@@ -15,7 +15,7 @@ REPORTS_DIR = BASE_DIR / "stored_reports"
 
 # HuggingFace models (downloaded on first use)
 BIOBERT_NER_MODEL = "d4data/biomedical-ner-all"
-INDICTRANS_MODEL = "ai4bharat/indictrans2-en-indic-1B"
+NLLB_MODEL = "facebook/nllb-200-distilled-600M"
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
 # Ollama (local — no API keys)
@@ -31,13 +31,17 @@ GEMINI_MODEL = "gemini-2.0-flash"
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_VISION_MODEL = "llama-3.2-90b-vision-preview"
 
-# Supported translation languages (IndicTrans2 BCP-47 tags)
+# Supported translation languages (NLLB BCP-47 tags)
 SUPPORTED_LANGUAGES = {
-    "en": {"label": "English", "indic_tag": None},
-    "hi": {"label": "Hindi", "indic_tag": "hin_Deva"},
-    "ta": {"label": "Tamil", "indic_tag": "tam_Taml"},
-    "kn": {"label": "Kannada", "indic_tag": "kan_Knda"},
+    "en": {"label": "English", "nllb_code": "eng_Latn"},
+    "hi": {"label": "Hindi", "nllb_code": "hin_Deva"},
+    "ta": {"label": "Tamil", "nllb_code": "tam_Taml"},
+    "kn": {"label": "Kannada", "nllb_code": "kan_Knda"},
+    "te": {"label": "Telugu", "nllb_code": "tel_Telu"},
 }
+
+# SQLite database
+DB_PATH = DATA_DIR / "reports.db"
 
 # File upload limits
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
