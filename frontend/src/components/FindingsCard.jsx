@@ -28,11 +28,11 @@ export default function FindingsCard({ finding }) {
 
   // Build reference range string
   let rangeStr = "N/A";
-  if (finding.range_low !== null && finding.range_high !== null) {
+  if (finding.range_low != null && finding.range_high != null) {
     rangeStr = `${finding.range_low} - ${finding.range_high}`;
-  } else if (finding.range_high !== null) {
+  } else if (finding.range_high != null) {
     rangeStr = `< ${finding.range_high}`;
-  } else if (finding.range_low !== null) {
+  } else if (finding.range_low != null) {
     rangeStr = `> ${finding.range_low}`;
   }
 

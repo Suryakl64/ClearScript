@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { UploadCloud, FileText, Image as ImageIcon, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { extractFindings, explainFindings, storeReport } from '../api/client';
 
 const STEPS = [

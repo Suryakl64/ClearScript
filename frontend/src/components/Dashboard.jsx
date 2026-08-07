@@ -7,6 +7,7 @@ import { Activity, Clock, FileText } from 'lucide-react';
 
 export default function Dashboard({ currentFindings, reportId, onNewUpload }) {
   const [findings, setFindings] = useState(currentFindings);
+  const [originalFindings] = useState(currentFindings); // preserve English originals
   const [currentLang, setCurrentLang] = useState('en');
   const [isTranslating, setIsTranslating] = useState(false);
   const [history, setHistory] = useState([]);
@@ -29,14 +30,14 @@ export default function Dashboard({ currentFindings, reportId, onNewUpload }) {
   const handleLanguageChange = async (langCode) => {
     setCurrentLang(langCode);
     if (langCode === 'en') {
-      // Revert to English explanations (we don't need to call API, just use original)
-      // We assume findings already have the original `explanation`.
+      // Revert to original English explanations
+      setFindings(originalFindings);
       return;
     }
 
     setIsTranslating(true);
     try {
-      const res = await translateFindings(findings, langCode);
+      const res = await translateFindings(originalFindings, langCode);
       if (res.success) {
         setFindings(res.findings);
       }
