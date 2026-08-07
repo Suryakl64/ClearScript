@@ -170,5 +170,5 @@ if __name__ == "__main__":
         print("  [OK] Ollama is running -- LLM explanations were generated")
     else:
         print("  [--] Ollama is offline -- fallback explanations were used")
-        print("    To enable LLM: ollama serve && ollama pull mistral")
+        print("    To enable LLM: ollama serve && ollama pull phi3")
     print()

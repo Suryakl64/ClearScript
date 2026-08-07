@@ -78,7 +78,7 @@ def generate(
             return data.get("response", "").strip()
     except httpx.ConnectError:
         raise OllamaError(
-            "Ollama is not running. Start it with: ollama serve && ollama pull mistral"
+            "Ollama is not running. Start it with: ollama serve && ollama pull phi3"
         )
     except httpx.HTTPStatusError as exc:
         raise OllamaError(f"Ollama HTTP error: {exc.response.status_code}")

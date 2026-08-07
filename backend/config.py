@@ -20,7 +20,7 @@ EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
 # Ollama (local — no API keys)
 OLLAMA_BASE_URL = "http://localhost:11434"
-OLLAMA_MODEL = "mistral"
+OLLAMA_MODEL = "phi3"
 OLLAMA_VISION_MODEL = "llava"  # local multimodal model for image understanding
 
 # Google Gemini (free tier — optional)

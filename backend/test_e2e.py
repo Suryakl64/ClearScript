@@ -101,7 +101,7 @@ def phase3_explain(findings, report_type):
     print(f"  Mode: {mode}")
     if not status.get("available"):
         print(f"  (Ollama offline -- using rule-based explanations)")
-        print(f"  (To enable AI: ollama serve && ollama pull mistral)\n")
+        print(f"  (To enable AI: ollama serve && ollama pull phi3)\n")
 
     # Explain each finding
     explained = explain_all_findings(findings)
