@@ -61,7 +61,7 @@ export default function FindingsCard({ finding }) {
             <div>
               <p className="text-xs text-slate-500 uppercase font-medium tracking-wider mb-1">Result</p>
               <p className="text-2xl font-bold text-slate-900">
-                {finding.value !== null ? finding.value : '--'}
+                {finding.value != null ? finding.value : '--'}
                 <span className="text-sm font-normal text-slate-500 ml-1">{finding.unit}</span>
               </p>
             </div>

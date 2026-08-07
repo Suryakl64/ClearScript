@@ -25,7 +25,7 @@ router = APIRouter(prefix="/explain", tags=["Explanation"])
 
 class Finding(BaseModel):
     """A single structured finding from the Phase 2 NER pipeline."""
-    test: str = Field(..., description="Canonical short name (e.g. 'Hb')")
+    test: str = Field("", description="Canonical short name (e.g. 'Hb')")
     value: Optional[float] = Field(None, description="Numeric value")
     unit: str = Field("", description="Unit string")
     range_low: Optional[float] = Field(None, description="Lower bound of reference range")

@@ -53,30 +53,40 @@ export default function UploadPage({ onUploadComplete }) {
     setCurrentStepIndex(1); // Start vision step
 
     try {
-      // Step 1: Vision / OCR + NER
+      // Step 1-2: Vision / OCR + NER
       const visionRes = await extractFindings(selectedFile);
       if (!visionRes.success) throw new Error(visionRes.detail || "Extraction failed");
       
-      let findings = visionRes.findings;
+      let findings = visionRes.findings || [];
       const reportType = visionRes.report_type || "structured";
 
-      // Step 3: Explanations
-      setCurrentStepIndex(3);
-      if (findings && findings.length > 0) {
-        const explainRes = await explainFindings(findings);
-        if (explainRes.success) {
-          findings = explainRes.findings;
-        }
+      if (findings.length === 0) {
+        throw new Error("No medical findings were detected in this file. Please try a clearer image or a different report.");
       }
 
-      // Step 4: Store & Index
+      // Step 3: Explanations (non-critical — fallback works)
+      setCurrentStepIndex(3);
+      try {
+        const explainRes = await explainFindings(findings);
+        if (explainRes.success && explainRes.findings) {
+          findings = explainRes.findings;
+        }
+      } catch (explainErr) {
+        console.warn("Explain step failed (using raw findings):", explainErr);
+        // Continue with raw findings — explanations are nice-to-have
+      }
+
+      // Step 4: Store & Index (non-critical)
       setCurrentStepIndex(4);
       let reportId = null;
-      if (findings && findings.length > 0) {
+      try {
         const storeRes = await storeReport(selectedFile.name, reportType, findings);
         if (storeRes.success) {
           reportId = storeRes.report_id;
         }
+      } catch (storeErr) {
+        console.warn("Store step failed:", storeErr);
+        // Continue without chat — findings still viewable
       }
 
       // Complete
@@ -87,8 +97,8 @@ export default function UploadPage({ onUploadComplete }) {
       }, 1000);
 
     } catch (err) {
-      console.error(err);
-      setError(err.message || "An unexpected error occurred during processing.");
+      console.error("Pipeline error:", err);
+      setError(err.response?.data?.detail || err.message || "An unexpected error occurred during processing.");
       setIsProcessing(false);
     }
   };
