@@ -25,6 +25,7 @@ Unified finding schema::
 from __future__ import annotations
 
 import logging
+import time
 from typing import Optional
 
 from backend.ner.report_type_detector import detect_report_type
@@ -143,6 +144,7 @@ def run_ner_pipeline(
         }
 
     # ── Step 1: Detect report type ────────────────────────────────────────
+    start_time = time.time()
     detection = detect_report_type(text)
     valid_parsers = ("structured", "narrative", "mixed", "both")
     if force_parser and force_parser.lower() not in valid_parsers:
@@ -155,14 +157,20 @@ def run_ner_pipeline(
     ner_findings: list[dict] = []
 
     if report_type in ("structured", "mixed", "both"):
+        t0 = time.time()
         rule_findings = parse_structured_report(text)
+        t1 = time.time()
+        logger.info(f"Rule-based parser completed in {t1 - t0:.3f}s (found {len(rule_findings)})")
         parsers_used.append("rule_parser")
 
     if report_type in ("narrative", "mixed", "both") and not skip_biobert:
         if _try_import_biobert():
             from backend.ner.biobert_ner import extract_narrative_findings
             try:
+                t0 = time.time()
                 ner_findings = extract_narrative_findings(text)
+                t1 = time.time()
+                logger.info(f"BioBERT parser completed in {t1 - t0:.3f}s (found {len(ner_findings)})")
                 parsers_used.append("biobert_ner")
             except Exception as exc:
                 logger.error("BioBERT NER failed: %s", exc)
@@ -173,6 +181,9 @@ def run_ner_pipeline(
     # ── Step 3: Merge and normalise ───────────────────────────────────────
     merged = _merge_findings(rule_findings, ner_findings)
     findings = [_normalise_finding(f) for f in merged]
+    
+    total_time = time.time() - start_time
+    logger.info(f"NER Pipeline finished in {total_time:.3f}s. Total findings: {len(findings)}")
 
     return {
         "findings": findings,

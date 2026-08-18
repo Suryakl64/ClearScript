@@ -7,6 +7,10 @@ OCR) and returns structured medical findings via the NER pipeline.
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from typing import Optional
+import logging
+import time
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ner", tags=["NER"])
 
@@ -82,11 +86,23 @@ async def extract_findings(
     # ── Run NER pipeline ──────────────────────────────────────────────────
     from backend.ner.pipeline import run_ner_pipeline
 
-    result = run_ner_pipeline(
-        raw_text,
-        force_parser=force_parser,
-        skip_biobert=skip_biobert,
-    )
+    logger.info(f"Starting NER extraction (skip_biobert={skip_biobert}, force_parser={force_parser})")
+    start_time = time.time()
+    
+    try:
+        result = run_ner_pipeline(
+            raw_text,
+            force_parser=force_parser,
+            skip_biobert=skip_biobert,
+        )
+    except Exception as exc:
+        logger.error(f"NER extraction failed: {exc}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal NER error: {exc}")
+
+    process_time = time.time() - start_time
+    logger.info(f"NER extraction completed in {process_time:.3f}s. "
+                f"Found {result.get('finding_count', 0)} findings. "
+                f"Parsers used: {', '.join(result.get('parsers_used', []))}")
 
     return {
         "success": True,

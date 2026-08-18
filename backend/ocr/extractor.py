@@ -2,8 +2,11 @@ import fitz  # PyMuPDF
 import cv2
 import numpy as np
 import re
+import logging
 
 from backend.ocr.layout_segmenter import detect_layout, reassemble_column_texts
+
+logger = logging.getLogger(__name__)
 
 # ── Engine singleton ──────────────────────────────────────────────────────────
 _ocr_engine = None
@@ -11,11 +14,11 @@ _ocr_engine = None
 def get_ocr_engine():
     global _ocr_engine
     if _ocr_engine is None:
-        print("Loading EasyOCR engine (first time only, ~30s + model download)...")
+        logger.info("Loading EasyOCR engine (first time only, ~30s + model download)...")
         import easyocr
         # gpu=False since we're on CPU; english only for medical reports
         _ocr_engine = easyocr.Reader(['en'], gpu=False, verbose=False)
-        print("EasyOCR ready.")
+        logger.info("EasyOCR ready.")
     return _ocr_engine
 
 
@@ -74,7 +77,7 @@ def extract_from_image_array(img_array: np.ndarray) -> str:
     layout = detect_layout(img_array)
 
     if layout.is_multi_column and layout.column_count >= 2:
-        print(f"  Layout: {layout.column_count} columns detected "
+        logger.info(f"Layout: {layout.column_count} columns detected "
               f"(dividers at x={layout.divider_x_positions})")
 
         # Step 2: OCR each column separately
@@ -83,7 +86,7 @@ def extract_from_image_array(img_array: np.ndarray) -> str:
             col_rgb = _to_rgb(col_img)
             raw = _ocr_image_raw(col_rgb)
             column_results.append(raw)
-            print(f"    Column {i+1}: {len(raw)} text blocks detected")
+            logger.debug(f"Column {i+1}: {len(raw)} text blocks detected")
 
         # Step 3: Reassemble columns row-by-row
         text = reassemble_column_texts(column_results)
@@ -98,14 +101,23 @@ def extract_from_image_array(img_array: np.ndarray) -> str:
 # ── File-type handlers ────────────────────────────────────────────────────────
 def extract_from_image_file(image_bytes: bytes) -> dict:
     """Extract text from an uploaded image (JPG / PNG / etc.)."""
-    img_array = np.frombuffer(image_bytes, np.uint8)
-    img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
-
-    if img is None:
+    try:
+        img_array = np.frombuffer(image_bytes, np.uint8)
+        img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+    except Exception as e:
+        logger.error(f"Error decoding image: {e}")
         return {
             "text"  : "",
             "method": "image_ocr",
-            "error" : "Could not decode image"
+            "error" : f"Could not decode image: {e}"
+        }
+
+    if img is None:
+        logger.error("Image decode returned None")
+        return {
+            "text"  : "",
+            "method": "image_ocr",
+            "error" : "Could not decode image (invalid format)"
         }
 
     text = extract_from_image_array(img)
@@ -123,27 +135,41 @@ def extract_from_pdf(pdf_bytes: bytes) -> dict:
     Uses PyMuPDF direct extraction for digital PDFs (fast, perfect accuracy).
     Falls back to EasyOCR for scanned / image-based pages.
     """
-    doc            = fitz.open(stream=pdf_bytes, filetype="pdf")
-    page_count     = len(doc)
-    all_text       = ""
-    pages_used_ocr = []
+    try:
+        doc            = fitz.open(stream=pdf_bytes, filetype="pdf")
+        page_count     = len(doc)
+        all_text       = ""
+        pages_used_ocr = []
 
-    for page_num in range(page_count):
-        page = doc[page_num]
-        text = page.get_text().strip()
+        for page_num in range(page_count):
+            try:
+                page = doc[page_num]
+                text = page.get_text().strip()
 
-        if len(text) < 50:
-            print(f"  Page {page_num + 1}: no text layer, running OCR...")
-            pix       = page.get_pixmap(dpi=300)
-            img_bytes = pix.tobytes("png")
-            img_array = np.frombuffer(img_bytes, np.uint8)
-            img       = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
-            text      = extract_from_image_array(img)
-            pages_used_ocr.append(page_num + 1)
+                if len(text) < 50:
+                    logger.info(f"Page {page_num + 1}: no text layer, running OCR...")
+                    pix       = page.get_pixmap(dpi=300)
+                    img_bytes = pix.tobytes("png")
+                    img_array = np.frombuffer(img_bytes, np.uint8)
+                    img       = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+                    text      = extract_from_image_array(img)
+                    pages_used_ocr.append(page_num + 1)
 
-        all_text += f"\n--- Page {page_num + 1} ---\n{text}"
+                all_text += f"\n--- Page {page_num + 1} ---\n{text}"
+            except Exception as e:
+                logger.error(f"Failed processing page {page_num+1}: {e}")
+                all_text += f"\n--- Page {page_num + 1} (ERROR: {e}) ---\n"
 
-    doc.close()
+        doc.close()
+    except Exception as e:
+        logger.error(f"Failed to open PDF: {e}")
+        return {
+            "text": "",
+            "pages": 0,
+            "ocr_pages": [],
+            "method": "pdf",
+            "error": f"Failed to process PDF: {e}"
+        }
     return {
         "text"     : all_text.strip(),
         "pages"    : page_count,

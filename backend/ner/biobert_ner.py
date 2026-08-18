@@ -13,9 +13,12 @@ NER pipeline.
 
 import re
 from typing import Optional
+import logging
 
 from backend.config import BIOBERT_NER_MODEL
 from backend.ner.abbreviations import normalize_test_name
+
+logger = logging.getLogger(__name__)
 
 # ── Lazy-loaded singleton ─────────────────────────────────────────────────────
 _ner_pipeline = None
@@ -25,16 +28,20 @@ def get_ner_pipeline():
     """Load the BioBERT NER pipeline on first call (singleton)."""
     global _ner_pipeline
     if _ner_pipeline is None:
-        print(f"Loading BioBERT NER model ({BIOBERT_NER_MODEL}) …")
-        from transformers import pipeline as hf_pipeline
+        logger.info(f"Loading BioBERT NER model ({BIOBERT_NER_MODEL}) …")
+        try:
+            from transformers import pipeline as hf_pipeline
 
-        _ner_pipeline = hf_pipeline(
-            "token-classification",
-            model=BIOBERT_NER_MODEL,
-            aggregation_strategy="simple",
-            device=-1,  # CPU
-        )
-        print("BioBERT NER ready.")
+            _ner_pipeline = hf_pipeline(
+                "token-classification",
+                model=BIOBERT_NER_MODEL,
+                aggregation_strategy="simple",
+                device=-1,  # CPU
+            )
+            logger.info("BioBERT NER ready.")
+        except Exception as e:
+            logger.error(f"Failed to load BioBERT model: {e}")
+            raise
     return _ner_pipeline
 
 
@@ -109,6 +116,7 @@ def extract_clinical_entities(text: str) -> list[dict]:
                 })
         return entities
     except Exception as exc:
+        logger.error(f"BioBERT extraction failed: {exc}")
         return [{"error": str(exc), "entity": "", "label": "ERROR", "score": 0}]
 
 

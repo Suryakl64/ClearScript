@@ -1,0 +1,29 @@
+<View>
+  <Labels name="label" toName="text">
+    <!-- Lab report entities -->
+    <Label value="Test_Name" background="#FF6B6B" hotkey="t"/>
+    <Label value="Test_Value" background="#4ECDC4" hotkey="v"/>
+    <Label value="Unit" background="#45B7D1" hotkey="u"/>
+    <Label value="Reference_Range" background="#96CEB4" hotkey="r"/>
+    <Label value="Flag" background="#FFEAA7" hotkey="f"/>
+
+    <!-- Clinical narrative entities -->
+    <Label value="Disease" background="#DDA0DD" hotkey="d"/>
+    <Label value="Medication" background="#FF8C00" hotkey="m"/>
+    <Label value="Symptom" background="#98D8C8" hotkey="s"/>
+    <Label value="Procedure" background="#FFB347" hotkey="p"/>
+    <Label value="Body_Part" background="#87CEEB" hotkey="b"/>
+    <Label value="Vital_Sign" background="#F0E68C" hotkey="g"/>
+  </Labels>
+
+  <Text name="text" value="$text" granularity="word"/>
+
+  <!-- Optional metadata for report classification -->
+  <Header value="Report Type Classification"/>
+  <Choices name="report_type" toName="text" choice="single" showInline="true">
+    <Choice value="Structured_Lab"/>
+    <Choice value="Narrative_Discharge"/>
+    <Choice value="Mixed"/>
+    <Choice value="Prescription"/>
+  </Choices>
+</View>

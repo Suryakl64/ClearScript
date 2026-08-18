@@ -9,8 +9,11 @@ Uses the NER abbreviation dictionary to normalise test names.
 
 import re
 from typing import Optional
+import logging
 
 from backend.ner.abbreviations import normalize_test_name
+
+logger = logging.getLogger(__name__)
 
 
 # ── Regex patterns for common Indian lab report row formats ───────────────────
@@ -201,6 +204,7 @@ def parse_structured_report(text: str) -> list[dict]:
         if _METADATA_IGNORE_PATTERNS.search(line):
             continue
 
+        matched_any = False
         for pattern in LAB_ROW_PATTERNS:
             match = pattern.match(line)
             if not match:
@@ -274,6 +278,10 @@ def parse_structured_report(text: str) -> list[dict]:
                 "raw_name": raw_name.strip(),
                 "raw_line": line,
             })
+            matched_any = True
             break  # first matching pattern wins for this line
+            
+        if not matched_any and len(line) > 10 and re.search(r'\d', line):
+            logger.debug(f"Unmatched potential lab row: {line}")
 
     return findings
