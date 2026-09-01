@@ -55,3 +55,8 @@ reports_test/
 
 # EasyOCR model cache
 ~/.EasyOCR/
+
+# Databases
+backend/data/*.db
+chroma_data/
+scratch/

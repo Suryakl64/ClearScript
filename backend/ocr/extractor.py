@@ -42,24 +42,41 @@ def _to_rgb(img_array: np.ndarray) -> np.ndarray:
         return cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB)
 
 
-def _raw_to_text(raw: list[tuple]) -> str:
-    """Convert raw EasyOCR results to a plain text string (top-to-bottom)."""
+def _raw_to_text(raw: list[tuple], y_tolerance: int = 15) -> str:
+    """Convert raw EasyOCR results to a plain text string, preserving lines."""
     if not raw:
         return ""
 
     raw_sorted = sorted(raw, key=lambda x: x[0][0][1])
-    out = []
-    prev_y = None
+    
+    lines = []
+    current_line = []
+    current_y = None
+
     for (box, text, confidence) in raw_sorted:
         if confidence < 0.4:
             continue
+        
         y = box[0][1]
-        if prev_y is not None and (y - prev_y) > 40:
-            out.append("")
-        out.append(text.strip())
-        prev_y = y
+        if current_y is None:
+            current_y = y
+            current_line.append((box[0][0], text.strip()))
+        elif abs(y - current_y) <= y_tolerance:
+            current_line.append((box[0][0], text.strip()))
+            # Update current_y to average of the line
+            current_y = (current_y * (len(current_line)-1) + y) / len(current_line)
+        else:
+            # Sort current line by X coordinate
+            current_line.sort(key=lambda item: item[0])
+            lines.append("   ".join(item[1] for item in current_line))
+            current_line = [(box[0][0], text.strip())]
+            current_y = y
 
-    return "\n".join(out)
+    if current_line:
+        current_line.sort(key=lambda item: item[0])
+        lines.append("   ".join(item[1] for item in current_line))
+
+    return "\n".join(lines)
 
 
 # ── Layout-aware OCR ──────────────────────────────────────────────────────────
@@ -210,7 +227,6 @@ def clean_text(text: str) -> str:
         r'\bl\b(?=\s*\d)': '1',    # lowercase l → 1 before numbers
         r'(?<=\d)O(?=\s)' : '0',   # letter O → 0 after numbers
         r'(?<=\d),(?=\d)' : '.',   # comma as decimal separator
-        r'\s{2,}'         : ' ',   # collapse multiple spaces
         r'\n{3,}'         : '\n\n' # collapse multiple blank lines
     }
     for pattern, repl in fixes.items():

@@ -177,8 +177,8 @@ def normalize_gemini_findings(gemini_result: dict) -> list[dict]:
                     range_low = float(gt.group(1))
 
         # Determine flag
-        flag = f.get("flag", "UNKNOWN").upper()
-        if flag not in ("HIGH", "LOW", "NORMAL", "UNKNOWN"):
+        flag = f.get("flag", "UNKNOWN").upper().strip()
+        if flag not in ("HIGH", "LOW", "NORMAL", "BORDERLINE", "UNKNOWN"):
             flag = "UNKNOWN"
 
         findings.append({

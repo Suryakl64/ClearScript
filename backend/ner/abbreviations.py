@@ -32,7 +32,9 @@ ABBREVIATIONS: dict[str, dict] = {
     "TLC": {
         "full_name": "Total Leukocyte Count",
         "aliases": ["WBC", "Total WBC", "Leucocyte Count", "Total Leucocyte Count",
-                     "TLC/WBC", "White Blood Cell Count", "WBC Count"],
+                     "TLC/WBC", "White Blood Cell Count", "WBC Count",
+                     "Total WBC count", "Total WBC Count", "WBC count",
+                     "Total White Blood Cell Count", "Toa CBCNO"],
         "loinc": "6690-2",
         "category": "haematology",
     },
@@ -44,7 +46,8 @@ ABBREVIATIONS: dict[str, dict] = {
     },
     "RBC": {
         "full_name": "Red Blood Cell Count",
-        "aliases": ["Red Cell Count", "Erythrocyte Count", "RBC Count"],
+        "aliases": ["Red Cell Count", "Erythrocyte Count", "RBC Count",
+                     "Total RBC count", "Total RBC Count", "Total RBC"],
         "loinc": "789-8",
         "category": "haematology",
     },
@@ -80,7 +83,8 @@ ABBREVIATIONS: dict[str, dict] = {
     },
     "PLT": {
         "full_name": "Platelet Count",
-        "aliases": ["Platelets", "PLT Count", "Thrombocyte Count", "Platelet"],
+        "aliases": ["Platelets", "PLT Count", "Thrombocyte Count", "Platelet",
+                     "Platelet Count", "Platelet count"],
         "loinc": "777-3",
         "category": "haematology",
     },
@@ -698,7 +702,8 @@ def normalize_test_name(raw_name: str) -> dict:
     # Partial / substring match — longer aliases tried first
     if not canonical:
         for alias, canon in sorted(alias_map.items(), key=lambda x: -len(x[0])):
-            if len(alias) >= 2 and alias in key:
+            # Require word boundaries to prevent 'mp' (Malaria) matching inside 'sample'
+            if re.search(rf"\b{re.escape(alias)}\b", key):
                 canonical = canon
                 break
 

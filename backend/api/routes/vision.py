@@ -89,8 +89,8 @@ async def extract_with_vision(
     elif prefer == "ocr":
         extractors = [_try_ocr_pipeline]
     else:
-        # Default priority: Groq → Gemini → Ollama → OCR
-        extractors = [_try_groq, _try_gemini, _try_ollama_vision, _try_ocr_pipeline]
+        # Default priority: Groq → Gemini → OCR → Ollama (llava is terrible at tables)
+        extractors = [_try_groq, _try_gemini, _try_ocr_pipeline, _try_ollama_vision]
 
     # Try extractors in order
     last_error = None
